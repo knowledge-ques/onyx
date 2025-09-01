@@ -1,0 +1,95 @@
+name: Deploy to Server
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_ip:
+        description: 'Server IP address'
+        required: true
+        default: '91.98.46.230'
+      domain:
+        description: 'Domain name'
+        required: true
+        default: 'knowledge.itender.sk'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ github.event.inputs.server_ip }} >> ~/.ssh/known_hosts
+        
+    - name: Deploy to server
+      run: |
+        ssh -i ~/.ssh/id_rsa root@${{ github.event.inputs.server_ip }} << 'EOF'
+        
+        # Create deployment directory
+        mkdir -p /opt/onyx
+        cd /opt/onyx
+        
+        # Install Docker if needed
+        if ! command -v docker &> /dev/null; then
+          curl -fsSL https://get.docker.com | sh
+          systemctl enable docker
+          systemctl start docker
+        fi
+        
+        # Stop any existing containers
+        docker compose -f deployment/docker_compose/docker-compose.prod.yml down 2>/dev/null || true
+        
+        # Clone/update repository
+        if [ -d "/opt/onyx/.git" ]; then
+          git pull origin main
+        else
+          rm -rf /opt/onyx/*
+          git clone https://github.com/onyx-dot-app/onyx.git /tmp/onyx-repo
+          cp -r /tmp/onyx-repo/* /opt/onyx/
+          rm -rf /tmp/onyx-repo
+        fi
+        
+        # Navigate to docker compose directory
+        cd /opt/onyx/deployment/docker_compose
+        
+        # Create .env file if it doesn't exist
+        if [ ! -f .env ]; then
+          cp env.prod.template .env
+          
+          # Set basic configuration
+          sed -i 's/^DOMAIN=.*/DOMAIN=${{ github.event.inputs.domain }}/' .env
+          sed -i 's/^WEB_DOMAIN=.*/WEB_DOMAIN=https:\/\/${{ github.event.inputs.domain }}/' .env
+          sed -i 's/^AUTH_TYPE=.*/AUTH_TYPE=disabled/' .env
+          
+          echo "⚠️  Created .env file - you may need to configure API keys manually"
+        fi
+        
+        # Start services
+        docker compose -f docker-compose.prod.yml up -d
+        
+        # Wait for services
+        sleep 30
+        
+        # Check status
+        docker compose -f docker-compose.prod.yml ps
+        
+        echo "✅ Deployment completed"
+        echo "🌐 Configure your domain ${{ github.event.inputs.domain }} to point to ${{ github.event.inputs.server_ip }}"
+        
+        EOF
+        
+    - name: Test deployment
+      run: |
+        sleep 10
+        echo "Testing HTTP connection..."
+        if curl -I --max-time 10 http://${{ github.event.inputs.server_ip }}:3000 > /dev/null 2>&1; then
+          echo "✅ HTTP connection successful"
+        else
+          echo "❌ HTTP connection failed"
+        fi
