@@ -279,7 +279,7 @@ const AssistantCard: React.FC<{
                 {persona.owner?.email || persona.builtin_persona ? (
                   <>
                     <span className="truncate">
-                      By {persona.owner?.email || "Onyx"}
+                      By {persona.owner?.email || "iTender"}
                     </span>
 
                     <span className="mx-2">•</span>
