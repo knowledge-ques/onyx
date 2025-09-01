@@ -34,12 +34,7 @@ export function Logo({
   ) {
     return (
       <div style={{ height, width }} className={className}>
-        <img
-          src="/ques-logo.svg"
-          alt="iTender Logo"
-          style={{ objectFit: "contain", height, width }}
-          className={className}
-        />
+        {/* No logo */}
       </div>
     );
   }
