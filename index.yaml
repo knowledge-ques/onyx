@@ -1,0 +1,48 @@
+apiVersion: v1
+entries:
+  onyx-stack:
+  - annotations:
+      category: Productivity
+      images: |
+        - name: webserver
+          image: docker.io/onyxdotapp/onyx-web-server:latest
+        - name: background
+          image: docker.io/onyxdotapp/onyx-backend:latest
+        - name: vespa
+          image: vespaengine/vespa:8.526.15
+      licenses: MIT
+    apiVersion: v2
+    appVersion: latest
+    created: "2025-09-01T11:43:32.588472957Z"
+    dependencies:
+    - condition: postgresql.enabled
+      name: postgresql
+      repository: https://charts.bitnami.com/bitnami
+      version: 14.3.1
+    - condition: vespa.enabled
+      name: vespa
+      repository: https://onyx-dot-app.github.io/vespa-helm-charts
+      version: 0.2.24
+    - condition: nginx.enabled
+      name: nginx
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 15.14.0
+    - condition: redis.enabled
+      name: redis
+      repository: https://charts.bitnami.com/bitnami
+      version: 20.1.0
+    - condition: minio.enabled
+      name: minio
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 17.0.4
+    description: A Helm chart for Kubernetes
+    digest: 9669466f21a6fb4174bb3ac219b7197f9e2dee9070f64eda572723014c3e8ef1
+    home: https://www.onyx.app/
+    name: onyx-stack
+    sources:
+    - https://github.com/onyx-dot-app/onyx
+    type: application
+    urls:
+    - https://knowledge-ques.github.io/onyx/onyx-stack-0.2.9.tgz
+    version: 0.2.9
+generated: "2025-09-01T11:43:32.566857636Z"
